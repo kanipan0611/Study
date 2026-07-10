@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学習アプリ - 弱点特化ドリル</title>
+<style>
+  :root {
+    --bg: #f5f3ee;
+    --card: #ffffff;
+    --ink: #2b2a26;
+    --sub: #6f6c63;
+    --line: #e3e0d8;
+    --accent: #b4552d;
+    --accent-soft: #f6e3d9;
+    --ok: #2e7d4f;
+    --ok-soft: #e0f0e6;
+    --ng: #b03434;
+    --ng-soft: #f7e2e2;
+    --warn-soft: #fdf3dc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    padding-bottom: 4rem;
+  }
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 0.9rem 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { font-size: 1.05rem; letter-spacing: 0.02em; }
+  header h1 span { color: var(--accent); }
+  nav { display: flex; gap: 0.25rem; margin-top: 0.6rem; overflow-x: auto; }
+  nav button {
+    appearance: none; border: none; background: none;
+    padding: 0.55rem 0.9rem; font-size: 0.92rem; cursor: pointer;
+    color: var(--sub); border-bottom: 3px solid transparent; white-space: nowrap;
+  }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  main { max-width: 760px; margin: 0 auto; padding: 1.1rem 1rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 1.1rem; margin-bottom: 1rem;
+  }
+  .card h2 { font-size: 1rem; margin-bottom: 0.7rem; }
+  .card h3 { font-size: 0.92rem; margin: 0.9rem 0 0.4rem; }
+  label { display: block; font-size: 0.82rem; color: var(--sub); margin: 0.6rem 0 0.2rem; }
+  input[type=text], input[type=number], input[type=password], select, textarea {
+    width: 100%; padding: 0.55rem 0.65rem; font-size: 0.95rem;
+    border: 1px solid var(--line); border-radius: 8px; background: #fcfbf8;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; }
+  button.primary, button.ghost, button.danger {
+    appearance: none; cursor: pointer; font-size: 0.92rem; font-family: inherit;
+    border-radius: 8px; padding: 0.55rem 1.1rem; margin-top: 0.7rem;
+  }
+  button.primary { background: var(--accent); color: #fff; border: 1px solid var(--accent); }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.ghost { background: none; color: var(--accent); border: 1px solid var(--accent); }
+  button.danger { background: none; color: var(--ng); border: 1px solid var(--ng); padding: 0.3rem 0.7rem; font-size: 0.8rem; margin-top: 0; }
+  .row { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+  .muted { color: var(--sub); font-size: 0.83rem; }
+  .badge {
+    display: inline-block; font-size: 0.75rem; padding: 0.1rem 0.55rem;
+    border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-right: 0.3rem;
+  }
+  .notice { background: var(--warn-soft); border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.83rem; margin: 0.6rem 0; }
+  .choice {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: #fcfbf8; border: 1px solid var(--line); border-radius: 10px;
+    padding: 0.7rem 0.9rem; margin-top: 0.55rem; font-size: 0.95rem; font-family: inherit;
+  }
+  .choice:hover:not(:disabled) { border-color: var(--accent); }
+  .choice.correct { background: var(--ok-soft); border-color: var(--ok); font-weight: 600; }
+  .choice.wrong { background: var(--ng-soft); border-color: var(--ng); }
+  .choice:disabled { cursor: default; color: var(--ink); }
+  .result-ok { color: var(--ok); font-weight: 700; font-size: 1.05rem; margin-top: 0.8rem; }
+  .result-ng { color: var(--ng); font-weight: 700; font-size: 1.05rem; margin-top: 0.8rem; }
+  .explain { background: #faf8f2; border-left: 3px solid var(--accent); padding: 0.6rem 0.8rem; margin-top: 0.6rem; font-size: 0.9rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--line); }
+  th { color: var(--sub); font-weight: 600; font-size: 0.78rem; }
+  .bar-wrap { background: #eeece5; border-radius: 999px; height: 10px; min-width: 80px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 999px; }
+  .qitem { border-bottom: 1px solid var(--line); padding: 0.7rem 0; }
+  .qitem:last-child { border-bottom: none; }
+  .qitem .qtext { font-size: 0.9rem; margin: 0.2rem 0; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--accent-soft); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 0.4rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  #toast {
+    position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 0.6rem 1.2rem; border-radius: 999px;
+    font-size: 0.88rem; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 100;
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; }
+  details summary { cursor: pointer; color: var(--accent); font-size: 0.88rem; margin: 0.5rem 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>学習アプリ <span>弱点特化ドリル</span></h1>
+  <nav id="nav">
+    <button data-tab="quiz" class="active">出題</button>
+    <button data-tab="dashboard">ダッシュボード</button>
+    <button data-tab="manage">問題管理</button>
+    <button data-tab="ai">AI補充</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ======================= 出題 ======================= -->
+<section id="tab-quiz" class="tab-panel active">
+  <div class="card" id="quiz-setup">
+    <h2>出題設定</h2>
+    <p class="muted">分野タグごとの正答率を集計し、正答率が低いタグほど出やすい重み付けで出題します（すべて端末内で計算・API不使用）。</p>
+    <div class="row">
+      <div>
+        <label>科目</label>
+        <select id="quiz-subject"></select>
+      </div>
+      <div>
+        <label>分野タグ（絞り込み・任意）</label>
+        <select id="quiz-tag"></select>
+      </div>
+    </div>
+    <button class="primary" id="btn-start">出題開始</button>
+    <p class="muted" id="quiz-empty-msg" style="margin-top:0.6rem; display:none;">問題がありません。「問題管理」または「AI補充」から問題を登録してください。</p>
+  </div>
+
+  <div class="card" id="quiz-board" style="display:none;">
+    <div class="flex-between">
+      <div><span class="badge" id="q-subject"></span><span class="badge" id="q-tag"></span></div>
+      <span class="muted" id="q-session-stat"></span>
+    </div>
+    <p style="margin-top:0.8rem; font-size:1rem;" id="q-text"></p>
+    <div id="q-choices"></div>
+    <div id="q-result"></div>
+    <div class="row">
+      <div><button class="primary" id="btn-next" style="display:none;">次の問題</button></div>
+      <div><button class="ghost" id="btn-quit">出題を終了</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= ダッシュボード ======================= -->
+<section id="tab-dashboard" class="tab-panel">
+  <div class="card">
+    <h2>弱点ダッシュボード</h2>
+    <label>科目</label>
+    <select id="dash-subject"></select>
+    <div id="dash-content" style="margin-top:0.8rem;"></div>
+  </div>
+</section>
+
+<!-- ======================= 問題管理 ======================= -->
+<section id="tab-manage" class="tab-panel">
+  <div class="card">
+    <h2>1問ずつ登録</h2>
+    <div class="row">
+      <div>
+        <label>科目（自由入力。例：宅建、簿記、TOEIC）</label>
+        <input type="text" id="m-subject" list="subject-list" placeholder="宅建">
+        <datalist id="subject-list"></datalist>
+      </div>
+      <div>
+        <label>分野タグ（自由入力。例：権利関係、仕訳）</label>
+        <input type="text" id="m-tag" list="tag-list" placeholder="権利関係">
+        <datalist id="tag-list"></datalist>
+      </div>
+    </div>
+    <label>問題文</label>
+    <textarea id="m-question" rows="3"></textarea>
+    <label>選択肢（1行に1つ・2〜6個）</label>
+    <textarea id="m-choices" rows="4" placeholder="選択肢1&#10;選択肢2&#10;選択肢3&#10;選択肢4"></textarea>
+    <label>正解の番号（1始まり）</label>
+    <input type="number" id="m-answer" min="1" value="1" style="max-width:120px;">
+    <label>解説（任意）</label>
+    <textarea id="m-explanation" rows="2"></textarea>
+    <button class="primary" id="btn-add-one">登録する</button>
+  </div>
+
+  <div class="card">
+    <h2>JSONでまとめて登録</h2>
+    <details>
+      <summary>形式を見る</summary>
+      <pre class="muted" style="overflow-x:auto; font-size:0.78rem;">[
+  {
+    "subject": "宅建",
+    "tag": "権利関係",
+    "question": "問題文",
+    "choices": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
+    "answerIndex": 0,
+    "explanation": "解説（任意）"
+  }
+]</pre>
+      <p class="muted">answerIndex は 0 始まり（最初の選択肢が正解なら 0）。</p>
+    </details>
+    <textarea id="m-json" rows="6" placeholder="ここにJSONを貼り付け"></textarea>
+    <button class="primary" id="btn-add-json">JSONを取り込む</button>
+  </div>
+
+  <div class="card">
+    <div class="flex-between">
+      <h2>登録済みの問題 <span class="muted" id="m-count"></span></h2>
+      <div>
+        <button class="ghost" id="btn-export" style="margin-top:0;">バックアップ書き出し</button>
+        <button class="ghost" id="btn-import" style="margin-top:0;">読み込み</button>
+        <input type="file" id="import-file" accept=".json" style="display:none;">
+      </div>
+    </div>
+    <div class="row" style="margin-top:0.6rem;">
+      <div>
+        <label>科目で絞り込み</label>
+        <select id="m-filter-subject"></select>
+      </div>
+      <div>
+        <label>キーワード</label>
+        <input type="text" id="m-filter-kw" placeholder="問題文・タグを検索">
+      </div>
+    </div>
+    <div id="m-list" style="margin-top:0.6rem;"></div>
+  </div>
+</section>
+
+<!-- ======================= AI補充 ======================= -->
+<section id="tab-ai" class="tab-panel">
+  <div class="card">
+    <h2>AIで問題を補充する</h2>
+    <p class="muted">特定タグの問題が足りないときだけ使う任意機能です。日々の出題・採点はAIを一切使いません。</p>
+    <div class="row">
+      <div>
+        <label>科目</label>
+        <input type="text" id="ai-subject" list="subject-list" placeholder="宅建">
+      </div>
+      <div>
+        <label>分野タグ</label>
+        <input type="text" id="ai-tag" list="tag-list" placeholder="権利関係">
+      </div>
+      <div>
+        <label>問題数</label>
+        <input type="number" id="ai-count" min="1" max="20" value="5">
+      </div>
+    </div>
+    <label>補足条件（任意。例：「借地借家法を中心に」「初学者向け」）</label>
+    <input type="text" id="ai-note" placeholder="">
+  </div>
+
+  <div class="card">
+    <h2>方法1：プロンプトをコピーして無料で作る <span class="badge">無料</span></h2>
+    <p class="muted">下のボタンでプロンプトをコピーし、普段使っているAIチャット（Claude・ChatGPTなど）に貼り付けてください。返ってきたJSONを下の欄に貼れば取り込めます。API課金は発生しません。</p>
+    <button class="ghost" id="btn-copy-prompt">生成用プロンプトをコピー</button>
+    <label>AIの回答（JSON）を貼り付け</label>
+    <textarea id="ai-paste" rows="6" placeholder='[{"subject": ... }] の形式'></textarea>
+    <button class="primary" id="btn-import-paste">取り込む</button>
+  </div>
+
+  <div class="card">
+    <h2>方法2：APIキーでワンボタン生成 <span class="badge" style="background:var(--warn-soft); color:#8a6a1f;">課金対象</span></h2>
+    <div class="notice">⚠️ この操作だけがAPI課金の対象です（Anthropic APIの従量課金）。ボタンを押した時だけ通信し、結果は端末に保存されます。</div>
+    <label>Anthropic APIキー（この端末のみに保存されます）</label>
+    <input type="password" id="ai-key" placeholder="sk-ant-...">
+    <button class="primary" id="btn-generate">AIに生成を依頼する</button>
+    <div id="ai-status" style="margin-top:0.6rem;"></div>
+  </div>
+</section>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ========================= 保存（localStorage） ========================= */
+const LS_Q = "studyapp.questions.v1";
+const LS_S = "studyapp.stats.v1";
+const LS_K = "studyapp.apikey.v1";
+
+function loadJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+let questions = loadJSON(LS_Q, []);   // [{id, subject, tag, question, choices, answerIndex, explanation, source, createdAt}]
+let stats = loadJSON(LS_S, {});       // { [id]: {attempts, correct, last} }
+
+function saveQuestions() { localStorage.setItem(LS_Q, JSON.stringify(questions)); }
+function saveStats() { localStorage.setItem(LS_S, JSON.stringify(stats)); }
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+/* ========================= 共通ユーティリティ ========================= */
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove("show"), 2600);
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+function subjects() { return [...new Set(questions.map(q => q.subject))].sort(); }
+function tagsOf(subject) {
+  return [...new Set(questions.filter(q => !subject || q.subject === subject).map(q => q.tag))].sort();
+}
+
+/* タグ別集計：{ tag: {questionCount, attempts, correct, acc} } */
+function tagStats(subject) {
+  const out = {};
+  for (const q of questions) {
+    if (q.subject !== subject) continue;
+    const t = out[q.tag] ??= { questionCount: 0, attempts: 0, correct: 0 };
+    t.questionCount++;
+    const s = stats[q.id];
+    if (s) { t.attempts += s.attempts; t.correct += s.correct; }
+  }
+  for (const t of Object.values(out)) {
+    t.acc = t.attempts > 0 ? t.correct / t.attempts : null;
+  }
+  return out;
+}
+
+/* ========================= タブ切替 ========================= */
+document.getElementById("nav").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-tab]");
+  if (!btn) return;
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("active", b === btn));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + btn.dataset.tab));
+  refreshAll();
+});
+
+/* ========================= 出題エンジン（ローカル計算） ========================= */
+/*
+ * 重み付け：Laplace平滑化した正答率 acc = (correct+1)/(attempts+2)
+ * タグ重み = (1 - acc) + 0.15  … 未学習タグは acc=0.5 相当で中程度に出る
+ * タグを重み抽選 → タグ内の問題も同じ式で重み抽選（直前の問題は避ける）
+ */
+let session = null; // {subject, tagFilter, current, order, answered, correctCount, total}
+
+function smoothedAcc(attempts, correct) { return (correct + 1) / (attempts + 2); }
+
+function weightedPick(items, weightFn) {
+  const weights = items.map(weightFn);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
+function pickQuestion(subject, tagFilter, excludeId) {
+  let pool = questions.filter(q => q.subject === subject && (!tagFilter || q.tag === tagFilter));
+  if (pool.length === 0) return null;
+  if (pool.length > 1 && excludeId) pool = pool.filter(q => q.id !== excludeId);
+
+  // タグ単位の重み抽選
+  const byTag = {};
+  for (const q of pool) (byTag[q.tag] ??= []).push(q);
+  const tagEntries = Object.entries(byTag).map(([tag, qs]) => {
+    let attempts = 0, correct = 0;
+    for (const q of qs) { const s = stats[q.id]; if (s) { attempts += s.attempts; correct += s.correct; } }
+    return { tag, qs, w: (1 - smoothedAcc(attempts, correct)) + 0.15 };
+  });
+  const chosenTag = weightedPick(tagEntries, t => t.w);
+
+  // タグ内の問題も弱いものを優先
+  return weightedPick(chosenTag.qs, q => {
+    const s = stats[q.id] || { attempts: 0, correct: 0 };
+    return (1 - smoothedAcc(s.attempts, s.correct)) + 0.15;
+  });
+}
+
+document.getElementById("btn-start").addEventListener("click", () => {
+  const subject = document.getElementById("quiz-subject").value;
+  const tagFilter = document.getElementById("quiz-tag").value;
+  if (!subject) { toast("問題を先に登録してください"); return; }
+  session = { subject, tagFilter, current: null, answered: 0, correctCount: 0 };
+  document.getElementById("quiz-setup").style.display = "none";
+  document.getElementById("quiz-board").style.display = "";
+  nextQuestion();
+});
+
+document.getElementById("btn-quit").addEventListener("click", () => {
+  session = null;
+  document.getElementById("quiz-setup").style.display = "";
+  document.getElementById("quiz-board").style.display = "none";
+  refreshAll();
+});
+
+document.getElementById("btn-next").addEventListener("click", nextQuestion);
+
+function nextQuestion() {
+  const q = pickQuestion(session.subject, session.tagFilter, session.current?.id);
+  if (!q) { toast("この条件の問題がありません"); return; }
+  session.current = q;
+
+  document.getElementById("q-subject").textContent = q.subject;
+  document.getElementById("q-tag").textContent = q.tag;
+  document.getElementById("q-text").textContent = q.question;
+  document.getElementById("q-session-stat").textContent =
+    session.answered > 0 ? `このセッション: ${session.correctCount}/${session.answered} 正解` : "";
+  document.getElementById("q-result").innerHTML = "";
+  document.getElementById("btn-next").style.display = "none";
+
+  // 選択肢は表示順をシャッフル
+  const order = q.choices.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const box = document.getElementById("q-choices");
+  box.innerHTML = "";
+  order.forEach(origIdx => {
+    const b = document.createElement("button");
+    b.className = "choice";
+    b.textContent = q.choices[origIdx];
+    b.addEventListener("click", () => answer(origIdx, b));
+    box.appendChild(b);
+  });
+}
+
+function answer(chosenIdx, chosenBtn) {
+  const q = session.current;
+  const correct = chosenIdx === q.answerIndex;
+
+  // 正誤記録を即時更新（ローカル保存）
+  const s = stats[q.id] ??= { attempts: 0, correct: 0, last: 0 };
+  s.attempts++;
+  if (correct) s.correct++;
+  s.last = Date.now();
+  saveStats();
+
+  session.answered++;
+  if (correct) session.correctCount++;
+
+  const buttons = [...document.querySelectorAll("#q-choices .choice")];
+  buttons.forEach(b => {
+    b.disabled = true;
+    if (b.textContent === q.choices[q.answerIndex]) b.classList.add("correct");
+  });
+  if (!correct) chosenBtn.classList.add("wrong");
+
+  const ts = tagStats(q.subject)[q.tag];
+  const accText = ts && ts.acc !== null ? `このタグの累計正答率: ${Math.round(ts.acc * 100)}%（${ts.correct}/${ts.attempts}）` : "";
+  document.getElementById("q-result").innerHTML =
+    `<p class="${correct ? "result-ok" : "result-ng"}">${correct ? "○ 正解！" : "× 不正解"}</p>` +
+    (q.explanation ? `<div class="explain">${esc(q.explanation)}</div>` : "") +
+    `<p class="muted" style="margin-top:0.4rem;">${esc(accText)}</p>`;
+  document.getElementById("q-session-stat").textContent = `このセッション: ${session.correctCount}/${session.answered} 正解`;
+  document.getElementById("btn-next").style.display = "";
+}
+
+/* ========================= ダッシュボード ========================= */
+function renderDashboard() {
+  const sel = document.getElementById("dash-subject");
+  const subject = sel.value;
+  const box = document.getElementById("dash-content");
+  if (!subject) { box.innerHTML = `<p class="muted">問題を登録すると科目・タグ別の正答率が表示されます。</p>`; return; }
+
+  const ts = tagStats(subject);
+  const rows = Object.entries(ts).sort((a, b) => {
+    const accA = a[1].acc ?? 1.01, accB = b[1].acc ?? 1.01; // 未解答は最後
+    return accA - accB;
+  });
+
+  let totalAtt = 0, totalCor = 0;
+  rows.forEach(([, t]) => { totalAtt += t.attempts; totalCor += t.correct; });
+
+  let html = `<p class="muted">科目全体: ${totalAtt > 0 ? Math.round(totalCor / totalAtt * 100) + "%（" + totalCor + "/" + totalAtt + "）" : "解答履歴なし"}　※正答率が低い順に表示</p>`;
+  html += `<table><tr><th>分野タグ</th><th>問題数</th><th>解答数</th><th>正答率</th><th></th></tr>`;
+  for (const [tag, t] of rows) {
+    const pct = t.acc === null ? null : Math.round(t.acc * 100);
+    const color = pct === null ? "#c9c5ba" : pct < 50 ? "var(--ng)" : pct < 75 ? "#c88a2e" : "var(--ok)";
+    html += `<tr>
+      <td>${esc(tag)}</td>
+      <td>${t.questionCount}</td>
+      <td>${t.attempts}</td>
+      <td style="white-space:nowrap;">${pct === null ? "－" : pct + "%"}</td>
+      <td style="width:30%;"><div class="bar-wrap"><div class="bar" style="width:${pct ?? 0}%; background:${color};"></div></div></td>
+    </tr>`;
+  }
+  html += `</table>`;
+  box.innerHTML = html;
+}
+document.getElementById("dash-subject").addEventListener("change", renderDashboard);
+
+/* ========================= 問題管理 ========================= */
+function validateEntry(e) {
+  if (typeof e !== "object" || e === null) return "オブジェクトではありません";
+  if (!e.subject || typeof e.subject !== "string") return "subject がありません";
+  if (!e.tag || typeof e.tag !== "string") return "tag がありません";
+  if (!e.question || typeof e.question !== "string") return "question がありません";
+  if (!Array.isArray(e.choices) || e.choices.length < 2 || e.choices.length > 6) return "choices は2〜6個の配列にしてください";
+  if (!e.choices.every(c => typeof c === "string" && c.trim())) return "choices に空の要素があります";
+  if (!Number.isInteger(e.answerIndex) || e.answerIndex < 0 || e.answerIndex >= e.choices.length) return "answerIndex が範囲外です";
+  return null;
+}
+
+function addEntries(entries, source) {
+  let added = 0;
+  const errors = [];
+  entries.forEach((e, i) => {
+    const err = validateEntry(e);
+    if (err) { errors.push(`${i + 1}件目: ${err}`); return; }
+    questions.push({
+      id: uid(),
+      subject: e.subject.trim(),
+      tag: e.tag.trim(),
+      question: e.question.trim(),
+      choices: e.choices.map(c => c.trim()),
+      answerIndex: e.answerIndex,
+      explanation: (e.explanation || "").trim(),
+      source,
+      createdAt: Date.now(),
+    });
+    added++;
+  });
+  if (added > 0) saveQuestions();
+  return { added, errors };
+}
+
+document.getElementById("btn-add-one").addEventListener("click", () => {
+  const choices = document.getElementById("m-choices").value.split("\n").map(s => s.trim()).filter(Boolean);
+  const entry = {
+    subject: document.getElementById("m-subject").value.trim(),
+    tag: document.getElementById("m-tag").value.trim(),
+    question: document.getElementById("m-question").value.trim(),
+    choices,
+    answerIndex: parseInt(document.getElementById("m-answer").value, 10) - 1,
+    explanation: document.getElementById("m-explanation").value.trim(),
+  };
+  const err = validateEntry(entry);
+  if (err) { toast("登録できません: " + err); return; }
+  addEntries([entry], "manual");
+  document.getElementById("m-question").value = "";
+  document.getElementById("m-choices").value = "";
+  document.getElementById("m-explanation").value = "";
+  toast("1問登録しました");
+  refreshAll();
+});
+
+function parseJSONArray(text) {
+  // コードブロックや前後の文章があっても最初の [ ... ] を拾う
+  let t = text.trim();
+  const start = t.indexOf("[");
+  const end = t.lastIndexOf("]");
+  if (start === -1 || end === -1 || end < start) throw new Error("JSON配列が見つかりません");
+  const arr = JSON.parse(t.slice(start, end + 1));
+  if (!Array.isArray(arr)) throw new Error("配列ではありません");
+  return arr;
+}
+
+document.getElementById("btn-add-json").addEventListener("click", () => {
+  try {
+    const arr = parseJSONArray(document.getElementById("m-json").value);
+    const { added, errors } = addEntries(arr, "manual");
+    document.getElementById("m-json").value = "";
+    toast(`${added}問登録しました` + (errors.length ? `（${errors.length}件エラー）` : ""));
+    if (errors.length) console.warn(errors);
+    refreshAll();
+  } catch (e) {
+    toast("JSONを解析できません: " + e.message);
+  }
+});
+
+function renderManageList() {
+  const fs = document.getElementById("m-filter-subject").value;
+  const kw = document.getElementById("m-filter-kw").value.trim().toLowerCase();
+  const list = questions.filter(q =>
+    (!fs || q.subject === fs) &&
+    (!kw || q.question.toLowerCase().includes(kw) || q.tag.toLowerCase().includes(kw))
+  );
+  document.getElementById("m-count").textContent = `（全${questions.length}問）`;
+  const box = document.getElementById("m-list");
+  if (list.length === 0) { box.innerHTML = `<p class="muted">該当する問題はありません。</p>`; return; }
+  box.innerHTML = list.slice().reverse().map(q => {
+    const s = stats[q.id];
+    const stat = s ? `正答 ${s.correct}/${s.attempts}` : "未解答";
+    return `<div class="qitem">
+      <div class="flex-between">
+        <div>
+          <span class="badge">${esc(q.subject)}</span><span class="badge">${esc(q.tag)}</span>
+          <span class="muted">${stat}${q.source === "ai" ? " ・AI生成" : ""}</span>
+        </div>
+        <button class="danger" data-del="${q.id}">削除</button>
+      </div>
+      <p class="qtext">${esc(q.question)}</p>
+      <p class="muted">正解: ${esc(q.choices[q.answerIndex])}</p>
+    </div>`;
+  }).join("");
+}
+document.getElementById("m-list").addEventListener("click", e => {
+  const id = e.target.dataset?.del;
+  if (!id) return;
+  if (!confirm("この問題を削除しますか？（解答履歴も消えます）")) return;
+  questions = questions.filter(q => q.id !== id);
+  delete stats[id];
+  saveQuestions(); saveStats();
+  refreshAll();
+});
+document.getElementById("m-filter-subject").addEventListener("change", renderManageList);
+document.getElementById("m-filter-kw").addEventListener("input", renderManageList);
+
+/* バックアップ書き出し・読み込み */
+document.getElementById("btn-export").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({ questions, stats }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `study-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+document.getElementById("btn-import").addEventListener("click", () => document.getElementById("import-file").click());
+document.getElementById("import-file").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (Array.isArray(data)) {
+        // 問題だけのJSON
+        const { added } = addEntries(data, "manual");
+        toast(`${added}問読み込みました`);
+      } else if (data && Array.isArray(data.questions)) {
+        if (!confirm("バックアップで現在のデータを置き換えますか？（キャンセルで追記）")) {
+          const { added } = addEntries(data.questions, "manual");
+          toast(`${added}問追記しました`);
+        } else {
+          questions = data.questions;
+          stats = data.stats || {};
+          saveQuestions(); saveStats();
+          toast("バックアップを復元しました");
+        }
+      } else {
+        toast("形式を認識できません");
+      }
+      refreshAll();
+    } catch (err) {
+      toast("読み込み失敗: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+/* ========================= AI補充 ========================= */
+function buildPrompt() {
+  const subject = document.getElementById("ai-subject").value.trim();
+  const tag = document.getElementById("ai-tag").value.trim();
+  const count = Math.min(20, Math.max(1, parseInt(document.getElementById("ai-count").value, 10) || 5));
+  const note = document.getElementById("ai-note").value.trim();
+  if (!subject || !tag) return null;
+  return { subject, tag, count, note, text:
+`あなたは資格・語学試験の問題作成の専門家です。以下の条件で四択問題を${count}問、日本語で作成してください。
+
+科目: ${subject}
+分野: ${tag}${note ? "\n補足条件: " + note : ""}
+
+要件:
+- 実際の試験で問われる水準の、正確で紛らわしすぎない良問にすること
+- 各問に簡潔で学習に役立つ解説を付けること
+- 出力は次の形式のJSON配列のみとし、コードブロック記号や説明文は一切付けないこと
+
+[
+  {
+    "subject": "${subject}",
+    "tag": "${tag}",
+    "question": "問題文",
+    "choices": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
+    "answerIndex": 0,
+    "explanation": "解説"
+  }
+]
+
+answerIndex は正解の選択肢の位置（0始まり）です。` };
+}
+
+document.getElementById("btn-copy-prompt").addEventListener("click", async () => {
+  const p = buildPrompt();
+  if (!p) { toast("科目と分野タグを入力してください"); return; }
+  try {
+    await navigator.clipboard.writeText(p.text);
+    toast("プロンプトをコピーしました。AIチャットに貼り付けてください");
+  } catch {
+    prompt("コピーできない環境のため、手動でコピーしてください:", p.text);
+  }
+});
+
+document.getElementById("btn-import-paste").addEventListener("click", () => {
+  try {
+    const arr = parseJSONArray(document.getElementById("ai-paste").value);
+    const { added, errors } = addEntries(arr, "ai");
+    document.getElementById("ai-paste").value = "";
+    toast(`${added}問取り込みました` + (errors.length ? `（${errors.length}件エラー）` : ""));
+    refreshAll();
+  } catch (e) {
+    toast("取り込み失敗: " + e.message);
+  }
+});
+
+/* --- 方法2: Anthropic API 直接呼び出し（ここだけ課金対象） --- */
+const AI_MODEL = "claude-opus-4-8";
+const AI_SCHEMA = {
+  type: "object",
+  properties: {
+    questions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          question: { type: "string" },
+          choices: { type: "array", items: { type: "string" } },
+          answerIndex: { type: "integer" },
+          explanation: { type: "string" },
+        },
+        required: ["question", "choices", "answerIndex", "explanation"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["questions"],
+  additionalProperties: false,
+};
+
+const keyInput = document.getElementById("ai-key");
+keyInput.value = localStorage.getItem(LS_K) || "";
+keyInput.addEventListener("change", () => localStorage.setItem(LS_K, keyInput.value.trim()));
+
+document.getElementById("btn-generate").addEventListener("click", async () => {
+  const p = buildPrompt();
+  if (!p) { toast("科目と分野タグを入力してください"); return; }
+  const apiKey = keyInput.value.trim();
+  if (!apiKey) { toast("APIキーを入力してください"); return; }
+  localStorage.setItem(LS_K, apiKey);
+
+  const btn = document.getElementById("btn-generate");
+  const status = document.getElementById("ai-status");
+  btn.disabled = true;
+  status.innerHTML = `<span class="spinner"></span><span class="muted">生成中…（${p.count}問。1分ほどかかることがあります）</span>`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        max_tokens: 8000,
+        output_config: { format: { type: "json_schema", schema: AI_SCHEMA } },
+        messages: [{ role: "user", content: p.text }],
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.error?.message || `HTTP ${res.status}`);
+    }
+    if (data.stop_reason === "refusal") {
+      throw new Error("AIがこの内容の生成を拒否しました。条件を変えて再試行してください");
+    }
+    if (data.stop_reason === "max_tokens") {
+      throw new Error("出力が長すぎて途中で切れました。問題数を減らして再試行してください");
+    }
+    const textBlock = (data.content || []).find(b => b.type === "text");
+    if (!textBlock) throw new Error("応答にテキストが含まれていません");
+    const parsed = JSON.parse(textBlock.text);
+    const entries = (parsed.questions || []).map(q => ({ subject: p.subject, tag: p.tag, ...q }));
+    const { added, errors } = addEntries(entries, "ai");
+    const usage = data.usage ? `（入力${data.usage.input_tokens}・出力${data.usage.output_tokens}トークン）` : "";
+    status.innerHTML = `<p class="muted">✅ ${added}問を保存しました${usage}${errors.length ? " / " + errors.length + "件は形式エラーで除外" : ""}</p>`;
+    toast(`${added}問を追加しました`);
+    refreshAll();
+  } catch (e) {
+    status.innerHTML = `<p style="color:var(--ng); font-size:0.88rem;">エラー: ${esc(e.message)}</p>`;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ========================= 画面更新 ========================= */
+function fillSelect(sel, values, allLabel) {
+  const prev = sel.value;
+  sel.innerHTML = "";
+  if (allLabel !== undefined) {
+    const o = document.createElement("option");
+    o.value = ""; o.textContent = allLabel;
+    sel.appendChild(o);
+  }
+  for (const v of values) {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  }
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
+function refreshAll() {
+  const subs = subjects();
+
+  fillSelect(document.getElementById("quiz-subject"), subs);
+  const qs = document.getElementById("quiz-subject").value;
+  fillSelect(document.getElementById("quiz-tag"), tagsOf(qs), "すべてのタグ（弱点優先）");
+  document.getElementById("quiz-empty-msg").style.display = subs.length ? "none" : "";
+  document.getElementById("btn-start").disabled = !subs.length;
+
+  fillSelect(document.getElementById("dash-subject"), subs);
+  renderDashboard();
+
+  fillSelect(document.getElementById("m-filter-subject"), subs, "すべての科目");
+  renderManageList();
+
+  // datalist（入力補完）
+  document.getElementById("subject-list").innerHTML = subs.map(s => `<option value="${esc(s)}">`).join("");
+  const allTags = [...new Set(questions.map(q => q.tag))].sort();
+  document.getElementById("tag-list").innerHTML = allTags.map(t => `<option value="${esc(t)}">`).join("");
+}
+
+document.getElementById("quiz-subject").addEventListener("change", () => {
+  fillSelect(document.getElementById("quiz-tag"), tagsOf(document.getElementById("quiz-subject").value), "すべてのタグ（弱点優先）");
+});
+
+refreshAll();
+</script>
+</body>
+</html>
